@@ -17,7 +17,7 @@ public class BalanceServiceImpl implements BalanceService {
 
     @Override
     public double getUserBalance(String id) {
-        return redisService.get(UserKey.getById,id,long.class);
+        return redisService.get(UserKey.getById,id,double.class);
     }
 
     @Override

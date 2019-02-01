@@ -2,10 +2,16 @@ package com.beta.redis;
 
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
+import com.beta.pojo.BigredPacket;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Transaction;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * redis服务
@@ -31,8 +37,109 @@ public class RedisService {
         } finally {
             returnToPool(jedis);
         }
+    }
+
+    public List getArray(KeyPrefix prefix, String key) {
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            //对key增加前缀，即可用于分类，也避免key重复
+            String realKey = prefix.getPrefix() + key;
+            String str = jedis.get(realKey);
+            List t = stringToBeanArray(str);
+            return t;
+        } finally {
+            returnToPool(jedis);
+        }
+    }
+
+
+    public <T> T tget(KeyPrefix prefix, String key, Class<T> clazz) {
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            //对key增加前缀，即可用于分类，也避免key重复
+            String realKey = prefix.getPrefix() + key;
+            String str = jedis.lpop(realKey);
+            System.out.println("__________________________");
+            T t = stringToBean(str, clazz);
+            return t;
+        } finally {
+            returnToPool(jedis);
+        }
+    }
+
+    /**
+     * 事务写入小红包队列
+     */
+
+    public <T> Boolean tset(KeyPrefix prefix, String key, T value) {
+        Jedis jedis = null;
+        try {
+//            System.out.println("............"+jedis.ge()+"................");
+            jedis = jedisPool.getResource();
+            String str = beanToString(value);
+            if (str == null || str.length() <= 0) {
+                return false;
+            }
+            String realKey = prefix.getPrefix() + key;
+            int seconds = prefix.expireSeconds();//获取过期时间
+            if (seconds <= 0) {
+
+                jedis.watch(realKey);
+                Transaction transaction =jedis.multi();
+                transaction.lpush(realKey,str);
+                List<Object> result=transaction.exec();
+                jedis.unwatch();
+
+                if(result.isEmpty())
+                {
+                    return false;
+                }else
+                    return true;
+
+            }
+
+            return true;
+        } finally {
+            returnToPool(jedis);
+        }
 
     }
+
+
+    public <T> Boolean blanceset(KeyPrefix prefix, String key, double blance) {
+        Jedis jedis = null;
+        try {
+//            System.out.println("............"+jedis.ge()+"................");
+            jedis = jedisPool.getResource();
+
+            if (blance== 0) {
+                return false;
+            }
+            String realKey = prefix.getPrefix() + key;
+            int seconds = prefix.expireSeconds();//获取过期时间
+            if (seconds <= 0) {
+
+                jedis.watch(realKey);
+                Transaction transaction =jedis.multi();
+                transaction.incrByFloat(realKey,blance);
+                List<Object> result=transaction.exec();
+                jedis.unwatch();
+                if(result.isEmpty())
+                {
+                    return false;
+                }else
+                    return true;
+            }
+
+            return true;
+        } finally {
+            returnToPool(jedis);
+        }
+
+    }
+
 
     /**
      * 存储对象
@@ -123,6 +230,29 @@ public class RedisService {
         }
     }
 
+    public Boolean decrbyFloatTrans(KeyPrefix prefix, String key,Double balance) {
+        Jedis jedis = null;
+        try {
+            if(balance==0)
+                return false;
+            jedis = jedisPool.getResource();
+            //生成真正的key
+            String realKey = prefix.getPrefix() + key;
+            jedis.watch(realKey);
+            Transaction transaction = jedis.multi();
+            transaction.incrByFloat(realKey,-balance);
+            List<Object> objects = transaction.exec();
+            jedis.unwatch();
+            if(objects.isEmpty())
+                return false;
+            else
+                return true;
+        } finally {
+            returnToPool(jedis);
+        }
+    }
+
+
     public <T> Double valueChange(KeyPrefix prefix, String key,double a) {
         Jedis jedis = null;
         try {
@@ -152,7 +282,7 @@ public class RedisService {
         }
 
     }
-
+//JSON.parseObject(str,new TypeReference<List<BigredPacket>>(){});
     public static <T> T stringToBean(String str, Class<T> clazz) {
         if (str == null || str.length() <= 0 || clazz == null) {
             return null;
@@ -160,12 +290,16 @@ public class RedisService {
         if (clazz == int.class || clazz == Integer.class) {
             return (T) Integer.valueOf(str);
         } else if (clazz == double.class || clazz == Double.class) {
-            return (T) Long.valueOf(str);
+            return (T) Double.valueOf(str);
         } else if (clazz == String.class) {
             return (T) str;
         } else {
-            return JSON.toJavaObject(JSON.parseObject(str), clazz);
+                return JSON.toJavaObject(JSON.parseObject(str), clazz);
         }
+    }
+
+    public List stringToBeanArray(String str) {
+            return JSON.parseObject(str,new TypeReference<List<BigredPacket>>(){});
     }
 
     private void returnToPool(Jedis jedis) {

@@ -10,6 +10,19 @@ spring:
     password: 123456
     url: jdbc:mysql://35.220.159.226:3306/picInfo
     driver-class-name: com.mysql.jdbc.Driver
+  rabbitmq:
+    host: 35.220.159.226
+    port: 5672
+    username: user_admin
+    password: passwd_admin
+    virtual-host: /
+    listener:
+      simple:
+        concurrency: 10
+        max-concurrency: 10
+        prefetch: 1
+        auto-startup: true
+        default-requeue-rejected: true
 
 #  thymeleaf:
 #    prefix: classpath:/templates/
@@ -34,6 +47,9 @@ spring:
 #      defaultZone: http://localhost:8761/eureka/
 server:
   port: 80
+
+
+
 
 redis:
   host: 120.78.196.105

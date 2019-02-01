@@ -1,4 +1,30 @@
 package com.beta.service.Impl;
 
-public class ReadServicePacketImpl   {
+import com.beta.pojo.BigredPacket;
+import com.beta.pojo.SmallRedPacket;
+import com.beta.service.ReadPacketService;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.UUID;
+
+@Service
+public class ReadServicePacketImpl implements ReadPacketService {
+
+
+    @Override
+    public ArrayList<SmallRedPacket> division(BigredPacket bigredPacket, int part) {
+
+        ArrayList<SmallRedPacket> smallRedPacketArrayList =new ArrayList<>(part);
+        for(int i=0;i<part;i++)
+        {
+            SmallRedPacket smallRedPacket =new SmallRedPacket();
+            smallRedPacket.setAmmount(bigredPacket.getCount()/bigredPacket.getCount());
+            smallRedPacket.setBigRedPacketBelong(bigredPacket.getRed_id());
+            smallRedPacket.setRed_id(UUID.randomUUID().toString());
+            smallRedPacketArrayList.add(smallRedPacket);
+
+        }
+        return smallRedPacketArrayList;
+    }
 }

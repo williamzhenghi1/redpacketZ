@@ -7,10 +7,8 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Data
-@Entity
 public class User {
-    @Column(name = "userid")
-    @Id
+
     private int userid;
     private long balance;
 }
