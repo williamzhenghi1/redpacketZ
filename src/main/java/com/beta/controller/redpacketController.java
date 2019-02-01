@@ -294,6 +294,8 @@ public class redpacketController {
         userBalanceTaskMessage.setBalanceChange(smallRedPacket.getAmmount());
         taskSender.sendUserBalanceInfoService(userBalanceTaskMessage);
 
+        //todo 客户端额能否啥的撒旦阿三
+
         //小红包信息扔进队列
         taskSender.SendSmallRedPacket(smallRedPacket);
         return ResultsVoUtils.success(redisService.get(UserKey.getById,userId,Double.class));
