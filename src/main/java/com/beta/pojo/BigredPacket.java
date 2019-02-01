@@ -2,23 +2,26 @@ package com.beta.pojo;
 
 import lombok.Data;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 //
 //@Entity
 @Data
+@Entity
 public class BigredPacket {
 
-//    @Id
-//    @Column(name="id")
+
+    @Id
+    @Column(name = "id")
     private int id;
     private double ammount;
     private int count;
     private String userbelong;
-    private String red_id;
+    private String redid;
     private boolean isOver;
-    private List<String> userList=new ArrayList<>(10);
+    @OneToMany(cascade = CascadeType.ALL,targetEntity = SmallRedPacket.class)
+    @JoinColumn(name = "redid")
+    private List<SmallRedPacket> smallRedPacketList=new ArrayList<>(10);
+
 }

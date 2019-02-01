@@ -20,7 +20,7 @@ public class ReadServicePacketImpl implements ReadPacketService {
         {
             SmallRedPacket smallRedPacket =new SmallRedPacket();
             smallRedPacket.setAmmount(bigredPacket.getCount()/bigredPacket.getCount());
-            smallRedPacket.setBigRedPacketBelong(bigredPacket.getRed_id());
+            smallRedPacket.setBigRedPacketBelong(bigredPacket.getRedid());
             smallRedPacket.setRed_id(UUID.randomUUID().toString());
             smallRedPacketArrayList.add(smallRedPacket);
 

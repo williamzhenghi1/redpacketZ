@@ -12,6 +12,7 @@ import com.beta.pojo.User;
 import com.beta.redis.ListKey;
 import com.beta.redis.RedisService;
 import com.beta.redis.UserKey;
+import com.beta.repositry.RepositryService;
 import com.beta.service.BalanceService;
 import com.beta.service.ReadPacketService;
 import com.beta.service.TestService;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Synchronize;
 import org.hibernate.resource.transaction.backend.jta.internal.synchronization.SynchronizationCallbackCoordinatorNonTrackingImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -49,6 +51,9 @@ public class redpacketController {
 
     @Autowired
     TaskSender taskSender;
+
+    @Autowired
+    RepositryService repositryService;
 
 
     private RateLimiter rateLimiter = RateLimiter.create(500);
@@ -127,7 +132,7 @@ public class redpacketController {
          */
 
         BigredPacket bigredPacket =new BigredPacket();
-        bigredPacket.setRed_id(UUID.randomUUID().toString());
+        bigredPacket.setRedid(UUID.randomUUID().toString());
         bigredPacket.setAmmount(price);
         bigredPacket.setUserbelong(userId);
         bigredPacket.setCount(part);
@@ -146,7 +151,7 @@ public class redpacketController {
         {
             boolean result=true;
            do{
-               result= redisService.tset(ListKey.getListKey,bigredPacket.getRed_id(),smallRedPacketArrayList.get(i));
+               result= redisService.tset(ListKey.getListKey,bigredPacket.getRedid(),smallRedPacketArrayList.get(i));
            }while (!result);
             taskSender.SendSmallRedPacket(smallRedPacketArrayList.get(i));
         }
@@ -216,11 +221,17 @@ public class redpacketController {
              return ResultsVoUtils.fail();
 
            //已经抢过一次了
-            if(bigredPacket.getUserList().contains(userId))
-            {
-                log.info("重复抢购");
-                return ResultsVoUtils.fail();
-            }
+
+//            for(int i=0;i<bigredPacket.getSmallRedPacketList().size();i++)
+//            {
+//                if(bigredPacket.getSmallRedPacketList().get(i).getUserbelong().equals(userId))
+//                {
+//                    log.info("重复抢购");
+//                    return ResultsVoUtils.fail();
+//                }
+//            }
+
+
 
 
 //           SmallRedPacket smallRedPacket;
@@ -269,7 +280,7 @@ public class redpacketController {
 
              //这里用事务去取小红包，这样可以避免写的场景
 
-        SmallRedPacket smallRedPacket= redisService.tget(ListKey.getListKey,bigredPacket.getRed_id(),SmallRedPacket.class);
+        SmallRedPacket smallRedPacket= redisService.tget(ListKey.getListKey,bigredPacket.getRedid(),SmallRedPacket.class);
         //取完了
         if(smallRedPacket==null)
         {
@@ -286,7 +297,7 @@ public class redpacketController {
                    break;
            }
         }
-        bigredPacket.getUserList().add(userId);
+//        bigredPacket.getUserList().add(userId);
 
         //用户账户扔进队列
         UserBalanceTaskMessage userBalanceTaskMessage =new UserBalanceTaskMessage();
@@ -294,10 +305,15 @@ public class redpacketController {
         userBalanceTaskMessage.setBalanceChange(smallRedPacket.getAmmount());
         taskSender.sendUserBalanceInfoService(userBalanceTaskMessage);
 
-        //todo 客户端额能否啥的撒旦阿三
 
         //小红包信息扔进队列
         taskSender.SendSmallRedPacket(smallRedPacket);
         return ResultsVoUtils.success(redisService.get(UserKey.getById,userId,Double.class));
     }
+    @GetMapping("jpa")
+    String jpatest()
+    {
+        return repositryService.findByRedid("1").toString();
+    }
+
 }

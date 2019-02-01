@@ -7,8 +7,11 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Data
+@Entity
 public class User {
 
+    @Id
+    @Column(name = "userid")
     private int userid;
-    private long balance;
+    private double balance;
 }
