@@ -6,6 +6,7 @@ import com.beta.Vo.ResultsVo;
 
 import com.beta.aqmp.TaskSender;
 import com.beta.aqmp.UserBalanceTaskMessage;
+import com.beta.mapper.UserBlanceMapper;
 import com.beta.pojo.BigredPacket;
 import com.beta.pojo.SmallRedPacket;
 import com.beta.pojo.User;
@@ -13,11 +14,10 @@ import com.beta.redis.ListKey;
 import com.beta.redis.RedisService;
 import com.beta.redis.UserKey;
 import com.beta.repositry.RepositryService;
-import com.beta.service.BalanceService;
-import com.beta.service.ReadPacketService;
-import com.beta.service.TestService;
+import com.beta.service.*;
 import com.google.common.util.concurrent.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.annotations.Mapper;
 import org.hibernate.annotations.Synchronize;
 import org.hibernate.resource.transaction.backend.jta.internal.synchronization.SynchronizationCallbackCoordinatorNonTrackingImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +55,16 @@ public class redpacketController {
     @Autowired
     RepositryService repositryService;
 
+    @Autowired
+    UserTransactionService userTransactionService;
+
+    @Autowired
+    UserBlanceMapper userBlanceMapper;
+
+    @Autowired
+    RedPacketDAOservice redPacketDAOservice;
+
+
 
     private RateLimiter rateLimiter = RateLimiter.create(500);
 
@@ -88,8 +98,6 @@ public class redpacketController {
 
         if(price==0)
             return ResultsVoUtils.fail();
-
-
 
         /*
              CAS写入
@@ -138,6 +146,7 @@ public class redpacketController {
         bigredPacket.setCount(part);
         ArrayList<SmallRedPacket> smallRedPacketArrayList= readPacketService.division(bigredPacket,part);
         bigredPackets.add(bigredPacket);
+        taskSender.SendBigRedPacket(bigredPacket);
 
         /*
             小红包被保存在redis里面，大红包保存在队列里面，
@@ -153,7 +162,7 @@ public class redpacketController {
            do{
                result= redisService.tset(ListKey.getListKey,bigredPacket.getRedid(),smallRedPacketArrayList.get(i));
            }while (!result);
-            taskSender.SendSmallRedPacket(smallRedPacketArrayList.get(i));
+//            taskSender.SendSmallRedPacket(smallRedPacketArrayList.get(i));
         }
 //        ArrayList<SmallRedPacket> smallRedPacketArrayList1 = new ArrayList<>();
 //        while (true)
@@ -179,13 +188,13 @@ public class redpacketController {
          */
 
         UserBalanceTaskMessage userBalanceTaskMessage = new UserBalanceTaskMessage();
-        userBalanceTaskMessage.setBalanceChange(price);
+        userBalanceTaskMessage.setBalanceChange(-price);
         userBalanceTaskMessage.setUserId(userId);
         taskSender.sendUserBalanceInfoService(userBalanceTaskMessage);
         /*
             异步红包记录
          */
-        taskSender.SendBigRedPacket(bigredPacket);
+
 
         return  ResultsVoUtils.success("success");
     }
@@ -220,16 +229,21 @@ public class redpacketController {
            if(bigredPacket.isOver())
              return ResultsVoUtils.fail();
 
-           //已经抢过一次了
+           //检测重复
+        /*
+            这里检测重复的时候要注意以下几点：
+            如果没查到有相同的，要立刻插入一个红包，以防止执行后面事务的时候遇到相同的用户插进来
+         */
 
-//            for(int i=0;i<bigredPacket.getSmallRedPacketList().size();i++)
-//            {
-//                if(bigredPacket.getSmallRedPacketList().get(i).getUserbelong().equals(userId))
-//                {
-//                    log.info("重复抢购");
-//                    return ResultsVoUtils.fail();
-//                }
-//            }
+        if(bigredPacket.getSmallRedPacketList().size()!=0)
+            for(int i=0;i<bigredPacket.getSmallRedPacketList().size();i++)
+            {
+                if(bigredPacket.getSmallRedPacketList().get(i).getUserbelong().equals(userId))
+                {
+                    log.info("重复抢购");
+                    return ResultsVoUtils.fail();
+                }
+            }
 
 
 
@@ -281,7 +295,9 @@ public class redpacketController {
              //这里用事务去取小红包，这样可以避免写的场景
 
         SmallRedPacket smallRedPacket= redisService.tget(ListKey.getListKey,bigredPacket.getRedid(),SmallRedPacket.class);
-        //取完了
+
+
+            //取完了
         if(smallRedPacket==null)
         {
             bigredPacket.setOver(true);
@@ -289,6 +305,9 @@ public class redpacketController {
             return ResultsVoUtils.fail();
         }else
         {
+            smallRedPacket.setUserbelong(userId);
+            bigredPacket.getSmallRedPacketList().add(smallRedPacket);
+
             //事务增长用户的余额
            while (true)
            {
@@ -308,12 +327,44 @@ public class redpacketController {
 
         //小红包信息扔进队列
         taskSender.SendSmallRedPacket(smallRedPacket);
+
+        //直接找到自己的红包，更新下剩下的信息
+
         return ResultsVoUtils.success(redisService.get(UserKey.getById,userId,Double.class));
     }
-    @GetMapping("jpa")
-    String jpatest()
+    @GetMapping("test3")
+    public ResultsVo jpatest()
     {
-        return repositryService.findByRedid("1").toString();
+
+        UserBalanceTaskMessage userBalanceTaskMessage =new UserBalanceTaskMessage();
+        userBalanceTaskMessage.setUserId("1");
+        userBalanceTaskMessage.setBalanceChange(20.0);
+        userBalanceTaskMessage.setVersion(1);
+//        userTransactionService.writeIntoDataBase(userBalanceTaskMessage);
+        taskSender.sendUserBalanceInfoService(userBalanceTaskMessage);
+        return ResultsVoUtils.success("success");
+    }
+
+    @GetMapping("test4")
+    public String test4()
+    {
+        SmallRedPacket smallRedPacket =new SmallRedPacket();
+        smallRedPacket.setRedid("3");
+        smallRedPacket.setAmmount(100.0);
+        smallRedPacket.setUserbelong("123");
+        smallRedPacket.setBigRedPacketBelong("123231");
+
+        BigredPacket bigredPacket =new BigredPacket();
+        bigredPacket.setOver(true);
+        bigredPacket.setCount(10);
+        bigredPacket.setAmmount(200);
+        bigredPacket.setRedid("1231241");
+        bigredPacket.setUserbelong("qwewa");
+        taskSender.SendSmallRedPacket(smallRedPacket);
+        taskSender.SendBigRedPacket(bigredPacket);
+
+//        redPacketDAOservice.save(bigredPacket);
+        return "success";
     }
 
 }

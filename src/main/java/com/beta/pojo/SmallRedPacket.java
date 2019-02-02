@@ -18,5 +18,5 @@ public class SmallRedPacket {
     private String bigRedPacketBelong;
     private double ammount;
     @Column(name="redid")
-    private String red_id;
+    private String redid;
 }

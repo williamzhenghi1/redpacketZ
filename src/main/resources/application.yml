@@ -20,12 +20,13 @@ spring:
     listener:
       simple:
         concurrency: 10
-        max-concurrency: 10
+        max-concurrency: 100
         prefetch: 1
         auto-startup: true
         default-requeue-rejected: true
 
-#  thymeleaf:
+
+  #  thymeleaf:
 #    prefix: classpath:/templates/
 #    check-template-location: true
 #    suffix: .html
@@ -59,5 +60,6 @@ redis:
   redis.poolMaxTotal: 1000
   redis.poolMaxIdle: 500
   redis.poolMaxWait: 500
+
 
 

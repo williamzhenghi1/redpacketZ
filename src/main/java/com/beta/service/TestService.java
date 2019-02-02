@@ -20,7 +20,7 @@ public class TestService {
         KeyPrefix keyPrefix =new OrderKey("order");
         User user =new User();
         user.setBalance(100);
-        user.setUserid(123);
+//        user.setUserid(123);
         redisService.set(keyPrefix,"id",user);
     }
     public User test2()

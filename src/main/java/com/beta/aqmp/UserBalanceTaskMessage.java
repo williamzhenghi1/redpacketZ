@@ -15,5 +15,6 @@ public class UserBalanceTaskMessage {
 
     private String userId;
     private double balanceChange;
+    private int version;
 
 }

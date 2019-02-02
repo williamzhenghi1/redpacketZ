@@ -11,7 +11,9 @@ import javax.persistence.Id;
 public class User {
 
     @Id
-    @Column(name = "userid")
-    private int userid;
+    @Column(name = "id")
+    private int id;
     private double balance;
+    private int version;
+    private String userid;
 }
