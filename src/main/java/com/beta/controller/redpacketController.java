@@ -10,10 +10,12 @@ import com.beta.mapper.UserBlanceMapper;
 import com.beta.pojo.BigredPacket;
 import com.beta.pojo.SmallRedPacket;
 import com.beta.pojo.User;
+import com.beta.redis.KeyPrefix;
 import com.beta.redis.ListKey;
 import com.beta.redis.RedisService;
 import com.beta.redis.UserKey;
 import com.beta.repositry.RepositryService;
+import com.beta.repositry.UserRepositry;
 import com.beta.service.*;
 import com.google.common.util.concurrent.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -38,6 +44,9 @@ public class redpacketController {
 
     @Autowired
     TestService testService;
+
+    @Autowired
+    UserRepositry userRepositry;
 
     @Autowired
     RedisService redisService;
@@ -57,6 +66,9 @@ public class redpacketController {
 
     @Autowired
     UserTransactionService userTransactionService;
+
+    @Autowired
+    UserService userService;
 
     @Autowired
     UserBlanceMapper userBlanceMapper;
@@ -364,6 +376,87 @@ public class redpacketController {
         taskSender.SendBigRedPacket(bigredPacket);
 
 //        redPacketDAOservice.save(bigredPacket);
+        return "success";
+    }
+
+    //生成数据库测试用数据
+
+    @GetMapping("/genData")
+    ResultsVo genData() throws IOException {
+        //生成的数据
+        File csv = new File("D:/makeRedPacket.csv");
+        BufferedWriter bw = new BufferedWriter(new FileWriter(csv,true));
+        //取的数据
+        File getPacket = new File("D:/getRedPacket.csv"); // CSV数据文件
+        BufferedWriter bw1 = new BufferedWriter(new FileWriter(getPacket,true)); // 附加
+
+        for(int i=0;i<1000;i++)
+        {
+            User user = new User();
+            user.setBalance(new Random().nextInt(1000));
+            user.setUserid(UUID.randomUUID().toString());
+//            user.setVersion(0);
+            userService.save(user);
+            //写进redis
+//            redisService.set(UserKey.getById,user.getUserid(),user.getBalance());
+            //生成发送取的csv文件
+
+            if(new Random().nextBoolean())
+            {
+//           File csv = new File("D:/makeRedPacket.csv"); // CSV数据文件
+//                BufferedWriter bw = new BufferedWriter(new FileWriter(csv,true)); // 附加
+                // 添加新的数据行
+                bw.write(user.getVersion()+","+new Random().nextInt(500)+","+"1,"+"10");
+                bw.newLine();
+
+            }
+
+//            BufferedWriter bw1 = new BufferedWriter(new FileWriter(getPacket,true)); // 附加
+            // 添加新的数据行
+            bw1.write(user.getUserid()+","+"1");
+            bw1.newLine();
+
+        }
+
+        //randomGet Packet
+//        File getPacket = new File("D:/getRedPacket.csv"); // CSV数据文件
+
+
+        bw.close();
+        bw1.close();
+
+        return ResultsVoUtils.success("success");
+
+    }
+
+    @GetMapping("/test5")
+    public String test5()
+    {
+        User user =new User();
+        user.setUserid("123xx");
+        user.setBalance(200.0);
+
+        userRepositry.save(user);
+        return "success";
+    }
+
+    /**
+     * 这里暂时不写进postConstruct 避免调试加载时间过长，后期部署可以改进
+     * @return
+     */
+
+    @GetMapping("/loadRedis")
+    public String loadRedis()
+    {
+
+        List<User> users = userRepositry.findAll();
+
+        //写redis
+        for(User normalUser : users)
+        {
+            redisService.set(UserKey.getById,normalUser.getUserid(),normalUser.getBalance());
+        }
+
         return "success";
     }
 

@@ -8,12 +8,12 @@ spring:
     name: redPacket
   datasource:
     username: root
-    password: 123456
-    url: jdbc:mysql://35.220.159.226:3306/picInfo
+    password: password
+    url: jdbc:mysql://192.168.159.128:3306/picInfo
     driver-class-name: com.mysql.jdbc.Driver
-#    url: jdbc:mysql://35.220.159.226:3306/picInfo
+  #    url: jdbc:mysql://35.220.159.226:3306/picInfo
   rabbitmq:
-    host: 35.220.159.226
+    host: 192.168.159.128
     port: 5672
     username: user_admin
     password: passwd_admin
@@ -28,13 +28,13 @@ spring:
 
 
   #  thymeleaf:
-#    prefix: classpath:/templates/
-#    check-template-location: true
-#    suffix: .html
-#    encoding: UTF-8
-#    servlet:
-#      content-type: text/html
-#    cache: false
+  #    prefix: classpath:/templates/
+  #    check-template-location: true
+  #    suffix: .html
+  #    encoding: UTF-8
+  #    servlet:
+  #      content-type: text/html
+  #    cache: false
   resources:
     #        add-mappings: true
     #        chain.cache: true
@@ -55,7 +55,7 @@ server:
 
 
 redis:
-  host: 120.78.196.105
+  host: 192.168.159.128
   redis.port: 6379
   redis.timeout: 10
   redis.poolMaxTotal: 1000
