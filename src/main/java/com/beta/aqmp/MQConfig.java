@@ -18,7 +18,7 @@ public class MQConfig {
     public static final String SECKILL_QUEUE = "seckill.queue";
     public static final String QUEUE_UserBlance = "queue_UserBlance";
     public static final String QUEUE_BigRedPacket = "queue_BigRedPacket";
-    public static final String QUEUE_SmallRedPacket = "queue_SmallRedPacket";
+    public static final String QUEUE_SmallRedPacket = "8";
 
     public static final String TOPIC_QUEUE1 = "topic.queue1";
     public static final String TOPIC_QUEUE2 = "topic.queue2";

@@ -451,13 +451,14 @@ public class redpacketController {
 
         List<User> users = userRepositry.findAll();
 
+        int count =0;
+        redisService.setSql(users);
         //写redis
-        for(User normalUser : users)
-        {
-            redisService.set(UserKey.getById,normalUser.getUserid(),normalUser.getBalance());
-        }
 
         return "success";
     }
+
+
+
 
 }

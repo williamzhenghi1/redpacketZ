@@ -4,10 +4,13 @@ package com.beta.redis;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.beta.pojo.BigredPacket;
+import com.beta.pojo.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.Transaction;
 
 import java.util.ArrayList;
@@ -17,6 +20,7 @@ import java.util.List;
  * redis服务
  */
 @Service
+@Slf4j
 public class RedisService {
 
     @Autowired
@@ -38,6 +42,53 @@ public class RedisService {
             returnToPool(jedis);
         }
     }
+
+
+    public void setSql(List<User> users) {
+        Jedis jedis = jedisPool.getResource();
+        Pipeline pipeline =jedis.pipelined();
+
+        for(int i=0;i<users.size();i++)
+        {
+            jedis = jedisPool.getResource();
+            String str = beanToString(users.get(i).getBalance());
+            String realKey = UserKey.getById + users.get(i).getUserid();
+            pipeline.sadd(realKey,str);
+        }
+
+        pipeline.exec();
+        log.info("________exe_______");
+        returnToPool(jedis);
+    }
+
+
+
+
+    //使用pipline 连续写入
+    public <T> Boolean set2(KeyPrefix prefix, String key, T value) {
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            String str = beanToString(value);
+            if (str == null || str.length() <= 0) {
+                return false;
+            }
+            String realKey = prefix.getPrefix() + key;
+            int seconds = prefix.expireSeconds();//获取过期时间
+            if (seconds <= 0) {
+                jedis.set(realKey, str);
+            } else {
+                jedis.setex(realKey, seconds, str);
+            }
+
+
+            return true;
+        } finally {
+            returnToPool(jedis);
+        }
+
+    }
+
 
     public List getArray(KeyPrefix prefix, String key) {
         Jedis jedis = null;
@@ -157,9 +208,12 @@ public class RedisService {
             int seconds = prefix.expireSeconds();//获取过期时间
             if (seconds <= 0) {
                 jedis.set(realKey, str);
+
+
             } else {
                 jedis.setex(realKey, seconds, str);
             }
+
 
             return true;
         } finally {
