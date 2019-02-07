@@ -22,7 +22,7 @@ public class RedisPoolFactory {
         config.setMaxIdle(500);
         config.setMaxTotal(1000);
         config.setMaxWaitMillis(500);
-        JedisPool jp = new JedisPool(config, "35.220.159.226", 6379,
+        JedisPool jp = new JedisPool(config, "192.168.197.131", 6379,
                 redisConfig.getTimeout()*1000, null, 0);
         return jp;
     }

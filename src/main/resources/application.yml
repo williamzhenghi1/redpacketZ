@@ -9,11 +9,11 @@ spring:
   datasource:
     username: root
     password: password
-    url: jdbc:mysql://192.168.159.128:3306/picInfo
+    url: jdbc:mysql://192.168.197.131:3306/picInfo
     driver-class-name: com.mysql.jdbc.Driver
   #    url: jdbc:mysql://35.220.159.226:3306/picInfo
   rabbitmq:
-    host: 192.168.159.128
+    host: 192.168.197.131
     port: 5672
     username: user_admin
     password: passwd_admin
@@ -55,7 +55,7 @@ server:
 
 
 redis:
-  host: 192.168.159.128
+  host: 192.168.197.131
   redis.port: 6379
   redis.timeout: 10
   redis.poolMaxTotal: 1000

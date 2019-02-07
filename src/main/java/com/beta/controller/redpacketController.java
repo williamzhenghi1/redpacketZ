@@ -27,6 +27,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 import javax.annotation.PostConstruct;
 import java.io.BufferedWriter;
@@ -104,7 +106,7 @@ public class redpacketController {
 
 //       testService.AuthUserToken(userId);
 
-        redisService.set(UserKey.getById,"1",200.0);
+//        redisService.set(UserKey.getById,"1",200.0);
 
         Double balance =balanceService.getUserBalance(userId);
 
@@ -174,7 +176,7 @@ public class redpacketController {
            do{
                result= redisService.tset(ListKey.getListKey,bigredPacket.getRedid(),smallRedPacketArrayList.get(i));
            }while (!result);
-//            taskSender.SendSmallRedPacket(smallRedPacketArrayList.get(i));
+            taskSender.SendSmallRedPacket(smallRedPacketArrayList.get(i));
         }
 //        ArrayList<SmallRedPacket> smallRedPacketArrayList1 = new ArrayList<>();
 //        while (true)
@@ -206,7 +208,7 @@ public class redpacketController {
         /*
             异步红包记录
          */
-
+        log.info("发送红包"+bigredPacket.getRedid());
 
         return  ResultsVoUtils.success("success");
     }
@@ -218,7 +220,6 @@ public class redpacketController {
 
 
 
-        //目前设计500QPS
         if(!rateLimiter.tryAcquire())
             return ResultsVoUtils.fail();
 
@@ -237,7 +238,7 @@ public class redpacketController {
            int random = new Random().nextInt(size);
            BigredPacket bigredPacket =bigredPackets.get(random);
 
-           log.info("拿到了"+size+"号红包");
+//           log.info("拿到了"+size+"号红包");
            if(bigredPacket.isOver())
              return ResultsVoUtils.fail();
 
@@ -384,13 +385,13 @@ public class redpacketController {
     @GetMapping("/genData")
     ResultsVo genData() throws IOException {
         //生成的数据
-        File csv = new File("D:/makeRedPacket.csv");
+        File csv = new File("C:/makeRedPacket.csv");
         BufferedWriter bw = new BufferedWriter(new FileWriter(csv,true));
         //取的数据
-        File getPacket = new File("D:/getRedPacket.csv"); // CSV数据文件
+        File getPacket = new File("C:/getRedPacket.csv"); // CSV数据文件
         BufferedWriter bw1 = new BufferedWriter(new FileWriter(getPacket,true)); // 附加
 
-        for(int i=0;i<1000;i++)
+        for(int i=0;i<50000;i++)
         {
             User user = new User();
             user.setBalance(new Random().nextInt(1000));
@@ -406,7 +407,7 @@ public class redpacketController {
 //           File csv = new File("D:/makeRedPacket.csv"); // CSV数据文件
 //                BufferedWriter bw = new BufferedWriter(new FileWriter(csv,true)); // 附加
                 // 添加新的数据行
-                bw.write(user.getVersion()+","+new Random().nextInt(500)+","+"1,"+"10");
+                bw.write(user.getUserid()+","+new Random().nextInt(500)+","+"1,"+"10");
                 bw.newLine();
 
             }
@@ -432,11 +433,7 @@ public class redpacketController {
     @GetMapping("/test5")
     public String test5()
     {
-        User user =new User();
-        user.setUserid("123xx");
-        user.setBalance(200.0);
 
-        userRepositry.save(user);
         return "success";
     }
 
@@ -455,6 +452,12 @@ public class redpacketController {
         redisService.setSql(users);
         //写redis
 
+        return "success";
+    }
+
+    @GetMapping("/test7")
+    public String test7()
+    {
         return "success";
     }
 
